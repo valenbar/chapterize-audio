@@ -16,6 +16,18 @@ Example usage:
 python chapterize.py -i <audio.mp3>  -t <dB threshold> -d <silence duration>
 ```
 
+Options:
+
+```text
+  -h, --help            show this help message and exit
+  -i INPUT_AUDIO, --input_audio INPUT_AUDIO
+                        The input audio file
+  -t THRESHOLD, --threshold THRESHOLD
+                        The silence threshold in dB (default: -30)
+  -d DURATION, --duration DURATION
+                        The minimum silence duration in seconds (default: 2.5)
+```
+
 Output:
 
 ```bash
