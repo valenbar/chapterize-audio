@@ -26,9 +26,10 @@ duration = args.duration
 silence_spots = []
 
 def sigint_handler(signal, frame):
-    print("SIGINT received. Saving intermediate results...")
-    export_to_cue(silence_spots, input_audio_file)
-    export_to_json(silence_spots, input_audio_file)
+    user_input = input("SIGINT received. Store results anyway? (y/N): ")
+    if user_input.lower() == 'y':
+        export_to_cue(silence_spots, input_audio_file)
+        export_to_json(silence_spots, input_audio_file)
     sys.exit(0)
 
 # Set the SIGINT handler
