@@ -13,6 +13,7 @@ parser = argparse.ArgumentParser(description="Generate chapters from detected si
 parser.add_argument('-i', '--input_audio', type=str, required=True, help="The input audio file")
 parser.add_argument('-t', '--threshold', type=int, default=-30, help="The silence threshold in dB (default: -30)")
 parser.add_argument('-d', '--duration', type=float, default=2.5, help="The minimum silence duration in seconds (default: 2.5)")
+parser.add_argument('-l', '--label', type=str, default="Part", help="The label to prefix the chapter nr. (default: Part)")
 
 # Parse the arguments
 args = parser.parse_args()
@@ -21,6 +22,7 @@ args = parser.parse_args()
 input_audio_file = args.input_audio
 noise_threshold = args.threshold
 duration = args.duration
+label = args.label
 
 # Global variable to store silence spots
 silence_spots = []
@@ -107,7 +109,7 @@ def export_to_cue(silence_spots, audio_file):
         # initial chapter at 00:00:00
         track_num_str = "1".zfill(digits)  # Add leading zeros
         file.write(f"  TRACK {track_num_str} AUDIO\n")
-        file.write(f"    TITLE \"Part {track_num_str}\"\n")
+        file.write(f"    TITLE \"{label} {track_num_str}\"\n")
         file.write(f"    INDEX 01 00:00:00\n")
         for track_num, (start, end) in enumerate(silence_spots, start=2):
             if end < 5:
@@ -115,7 +117,7 @@ def export_to_cue(silence_spots, audio_file):
                 continue
             track_num_str = str(track_num).zfill(digits)  # Add leading zeros
             file.write(f"  TRACK {track_num_str} AUDIO\n")
-            file.write(f"    TITLE \"Part {track_num_str}\"\n")
+            file.write(f"    TITLE \"{label} {track_num_str}\"\n")
             file.write(f"    INDEX 01 {convert_seconds_to_mm_ss_ff(end)}\n")
     print(f"Chapters exported to: {output_file}")
 
@@ -137,7 +139,7 @@ def export_to_json(silence_spots, audio_file):
             "id": i,
             "start": prev_end,
             "end": curr_end,
-            "title": f"Part {i + 1}"
+            "title": f"{label} {i + 1}"
         })
 
     with open(output_file, 'w') as file:
