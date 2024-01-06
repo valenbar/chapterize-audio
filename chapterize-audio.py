@@ -25,15 +25,40 @@ duration = args.duration
 # Global variable to store silence spots
 silence_spots = []
 
+
+def prompt_yes_no(question, default="no"):
+    valid = {"yes": True, "y": True, "no": False, "n": False}
+    if default is None:
+        prompt = " [y/n] "
+    elif default == "yes":
+        prompt = " [Y/n] "
+    elif default == "no":
+        prompt = " [y/N] "
+    else:
+        raise ValueError("invalid default answer: '%s'" % default)
+
+    while True:
+        sys.stdout.write(question + prompt)
+        choice = input().lower()
+        if default is not None and choice == '':
+            return valid[default]
+        elif choice in valid:
+            return valid[choice]
+        else:
+            sys.stdout.write("Please respond with 'yes' or 'no' "
+                             "(or 'y' or 'n').\n")
+
+
 def sigint_handler(signal, frame):
-    user_input = input("SIGINT received. Store results anyway? (y/N): ")
-    if user_input.lower() == 'y':
+    if prompt_yes_no(question="Store intermediate results?", default="no"):
         export_to_cue(silence_spots, input_audio_file)
         export_to_json(silence_spots, input_audio_file)
     sys.exit(0)
 
+
 # Set the SIGINT handler
 signal.signal(signal.SIGINT, sigint_handler)
+
 
 def convert_seconds_to_mm_ss_ff(seconds):
     seconds = seconds
@@ -126,5 +151,7 @@ if __name__ == "__main__":
 
     detect_silence(input_audio_file, noise_threshold, duration)
     print(f"Total silence spots detected: {len(silence_spots)}")
-    export_to_cue(silence_spots, input_audio_file)
-    export_to_json(silence_spots, input_audio_file)
+    if prompt_yes_no(question="Store cue file?", default="no"):
+        export_to_cue(silence_spots, input_audio_file)
+    if prompt_yes_no(question="Store chapter.json?", default="no"):
+        export_to_json(silence_spots, input_audio_file)
