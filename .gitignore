@@ -1,3 +1,4 @@
 *.json
 *.cue
 *.m4b
+__pycache__/transcribe_audio.cpython-311.pyc
