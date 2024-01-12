@@ -52,9 +52,11 @@ def prompt_yes_no(question, default="no"):
 
 
 def sigint_handler(signal, frame):
-    if prompt_yes_no(question="Store intermediate results?", default="no"):
-        export_to_cue(silence_spots, input_audio_file)
-        export_to_json(silence_spots, input_audio_file)
+    # if prompt_yes_no(question="Store intermediate results?", default="no"):
+    #     export_to_cue(silence_spots, input_audio_file)
+    #     export_to_json(silence_spots, input_audio_file)
+    if transcribe:
+        transcribe_sigint_handler(signal, frame)
     sys.exit(0)
 
 
