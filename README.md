@@ -7,6 +7,11 @@ This script generates chapters for an audio file by detecting silence. The chapt
 - Python
 - [FFmpeg](https://ffmpeg.org/) (Make sure it is installed and added to the system's PATH)
 
+## Installation
+
+```bash
+pip install -r requirements.txt
+```
 
 ## Usage
 
@@ -19,6 +24,7 @@ python chapterize.py -i <audio.mp3>  -t <dB threshold> -d <silence duration>
 Options:
 
 ```text
+options:
   -h, --help            show this help message and exit
   -i INPUT_AUDIO, --input_audio INPUT_AUDIO
                         The input audio file
@@ -26,9 +32,25 @@ Options:
                         The silence threshold in dB (default: -30)
   -d DURATION, --duration DURATION
                         The minimum silence duration in seconds (default: 2.5)
+  -l LABEL, --label LABEL
+                        The label to prefix the chapter nr. (default: Part)
+  --transcribe, --no-transcribe
+                        Enable transcribing of chapter entry (default: True)
+  --language LANGUAGE   The language to use for transcribing (default: english)
+  --transcript-duration TRANSCRIPT_DURATION
+                        The duration of the audio to transcribe (default: 3)
 ```
 
-Output:
+### Console Output:
+
+```bash
+$ python chapterize.py -i audio.mp3 -t -30 -d 2.5
+Part duration: <chapter duration> Next part start: <chapter start time>, <transcribed chapter start>
+...
+```
+
+
+### File Output:
 
 ```bash
 ./audio.cue
