@@ -8,6 +8,7 @@ import json
 from transcribe_audio import transcribe_audio, sigint_handler as transcribe_sigint_handler
 
 MIN_FIRST_CHAPTER_DURATION = 5
+MIN_LAST_CHAPTER_DURATION = 3
 TRANSCRIPTION_START_SHIFT = -0.3
 
 # Create the parser
@@ -121,12 +122,15 @@ def detect_silence(input_file, noise_threshold, duration):
 
     silence_spots.append((chapter_start, text))
 
+    total_length = get_audio_duration(input_file)
     for line in process.stdout:
         if 'silence_end' in line:
             chapter_start = float(line.split('silence_end: ')[1].split(' ')[0])
             if chapter_start < MIN_FIRST_CHAPTER_DURATION:
                 # don't add chapter within 5 seconds of the initial chapter
                 continue
+            if chapter_start > total_length - MIN_LAST_CHAPTER_DURATION:
+                break
 
             print(f"Chapter start: {str(datetime.timedelta(seconds=chapter_start)).split('.')[0]}", end='', flush=True)
             if transcribing:
