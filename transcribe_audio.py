@@ -13,6 +13,7 @@ def sigint_handler(signal, frame):
 def transcribe_audio(audio_file, start, end, language) -> str:
     command = [
         'ffmpeg',
+        '-hwaccel', 'cuda',  # Add hardware acceleration method (e.g., 'cuda' for NVIDIA GPUs)
         '-i', audio_file,
         '-ss', str(start),
         '-to', str(end),
@@ -41,7 +42,6 @@ def transcribe_audio(audio_file, start, end, language) -> str:
             text = r.recognize_google(audio, language = language, show_all = False)
         except sr.UnknownValueError:
             text = "-"
-        # print(text)
 
     os.remove('temp.wav')
     return text
@@ -52,7 +52,8 @@ def main():
     audio_file = "./audio/all_systems_red.m4b"
     start = 0
     end = 3
-    transcribe_audio(audio_file, start, end)
+    text = transcribe_audio(audio_file, start, end, "english")
+    print(text)
 
 
 if __name__ == "__main__":
