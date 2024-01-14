@@ -82,6 +82,20 @@ def convert_seconds_to_mm_ss_ff(seconds):
     minutes, seconds = divmod(total_seconds, 60)
     return f"{minutes:02d}:{seconds:02d}:{frames:02d}"
 
+def get_audio_duration(audio_file):
+    # find total duration of audio file in seconds
+    command = [
+        'ffprobe',
+        '-v', 'error',
+        '-show_entries', 'format=duration',
+        '-of', 'default=noprint_wrappers=1:nokey=1',
+        audio_file
+    ]
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    process.wait()
+    total_length = float(process.stdout.read().strip())
+    return total_length
+
 def detect_silence(input_file, noise_threshold, duration):
     command = [
         'ffmpeg',
@@ -102,7 +116,7 @@ def detect_silence(input_file, noise_threshold, duration):
         text = transcribe_audio(audio_file=input_audio_file, start=chapter_start, end=transcript_duration, language=language)
         print(f" - {text}")
     else:
-        print()
+        print(f" - {label} 1")
         text = "-"
 
     silence_spots.append((chapter_start, text))
@@ -124,7 +138,7 @@ def detect_silence(input_file, noise_threshold, duration):
                 )
                 print(f" - {text}")
             else:
-                print()
+                print(f" - {label} {len(silence_spots) + 1}")
                 text = "-"
             silence_spots.append((chapter_start, text))
 
@@ -146,6 +160,9 @@ def export_to_cue(silence_spots, audio_file):
 def export_to_json(silence_spots, audio_file):
     output_file = audio_file.rsplit('.', 1)[0] + '.chapterized.json'
     data = []
+    total_length = get_audio_duration(audio_file)
+    silence_spots.append((total_length, "-"))
+
     for i in range(len(silence_spots) - 1):
         window = silence_spots[i:i+2]
         prev = window[0]
