@@ -7,6 +7,9 @@ import datetime
 import json
 from transcribe_audio import transcribe_audio, sigint_handler as transcribe_sigint_handler
 
+MIN_FIRST_CHAPTER_DURATION = 5
+TRANSCRIPTION_START_SHIFT = -0.3
+
 # Create the parser
 parser = argparse.ArgumentParser(description="Generate chapters from detected silence in audio files")
 
@@ -15,7 +18,7 @@ parser.add_argument('-i', '--input_audio', type=str, required=True, help="The in
 parser.add_argument('-t', '--threshold', type=int, default=-30, help="The silence threshold in dB (default: -30)")
 parser.add_argument('-d', '--duration', type=float, default=2.5, help="The minimum silence duration in seconds (default: 2.5)")
 parser.add_argument('-l', '--label', type=str, default="Part", help="The label to prefix the chapter nr. (default: Part)")
-parser.add_argument('--transcribe', action=argparse.BooleanOptionalAction, default=True, help="Enable transcribing of chapter entry (default: True)")
+parser.add_argument('--transcription', action=argparse.BooleanOptionalAction, default=True, help="Enable transcribing of chapter entry (default: True)")
 parser.add_argument('--language', type=str, default="english", help="The language to use for transcribing (default: english)");
 parser.add_argument('--transcript-duration', type=float, default=3, help="The duration of the audio to transcribe (default: 3)")
 
@@ -26,12 +29,14 @@ input_audio_file: str = args.input_audio
 noise_threshold: int = args.threshold
 duration: float = args.duration
 label: str = args.label
-transcribe: bool = args.transcribe
+transcribing: bool = args.transcription
 language: str = args.language
 transcript_duration: float = args.transcript_duration
 
 # Global variable to store silence spots
 silence_spots = []
+
+transcript_labels = True
 
 
 def prompt_yes_no(question, default="no"):
@@ -61,7 +66,7 @@ def sigint_handler(signal, frame):
     # if prompt_yes_no(question="Store intermediate results?", default="no"):
     #     export_to_cue(silence_spots, input_audio_file)
     #     export_to_json(silence_spots, input_audio_file)
-    if transcribe:
+    if transcribing:
         transcribe_sigint_handler(signal, frame)
     sys.exit(0)
 
@@ -90,87 +95,82 @@ def detect_silence(input_file, noise_threshold, duration):
     # Run FFmpeg command and capture output
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
 
-    # Process the output while the process is still running
-    silence_start = None
-    silence_end = None
-    last_end = 0
-    for i, line in enumerate(process.stdout):
-        if 'silence_start' in line:
-            silence_start = float(line.split('silence_start: ')[1].split(' ')[0].replace('\n', ''))
-        elif 'silence_end' in line:
-            silence_end = float(line.split('silence_end: ')[1].split(' ')[0])
-            silence_spots.append((silence_start, silence_end))
+    # Transcribe beginning
+    chapter_start = 0
+    print(f"Chapter start: {str(datetime.timedelta(seconds=chapter_start)).split('.')[0]}", end='', flush=True)
+    if transcribing:
+        text = transcribe_audio(audio_file=input_audio_file, start=chapter_start, end=transcript_duration, language=language)
+        print(f" - {text}")
+    else:
+        print()
+        text = "-"
 
-            transcript_start = silence_end - 0.5 if silence_end > 0.5 else 0
-            if transcribe:
+    silence_spots.append((chapter_start, text))
+
+    for line in process.stdout:
+        if 'silence_end' in line:
+            chapter_start = float(line.split('silence_end: ')[1].split(' ')[0])
+            if chapter_start < MIN_FIRST_CHAPTER_DURATION:
+                # don't add chapter within 5 seconds of the initial chapter
+                continue
+
+            print(f"Chapter start: {str(datetime.timedelta(seconds=chapter_start)).split('.')[0]}", end='', flush=True)
+            if transcribing:
                 text = transcribe_audio(
-                    input_file,
-                    transcript_start,
-                    silence_end + transcript_duration,
-                    language
+                    audio_file=input_file,
+                    start=chapter_start + TRANSCRIPTION_START_SHIFT,
+                    end=chapter_start + transcript_duration,
+                    language=language
                 )
+                print(f" - {text}")
             else:
-                text = ""
-            print(
-                f"Part duration: {str(datetime.timedelta(seconds=silence_end - last_end)).split('.')[0]}, " +
-                f"Next part start: {str(datetime.timedelta(seconds=silence_end)).split('.')[0]}" +
-                f", {text}"
-            )
-            last_end = silence_end
+                print()
+                text = "-"
+            silence_spots.append((chapter_start, text))
 
     process.wait()
 
 
 def export_to_cue(silence_spots, audio_file):
-    output_file = audio_file.rsplit('.', 1)[0] + '.cue'
+    output_file = audio_file.rsplit('.', 1)[0] + '.chapterized.cue'
     digits = len(str(len(silence_spots)))
     with open(output_file, 'w') as file:
         file.write(f"FILE \"{os.path.basename(audio_file)}\" MP3\n")  # Replace with your audio file name
-        # initial chapter at 00:00:00
-        track_num_str = "1".zfill(digits)  # Add leading zeros
-        file.write(f"  TRACK {track_num_str} AUDIO\n")
-        file.write(f"    TITLE \"{label} {track_num_str}\"\n")
-        file.write(f"    INDEX 01 00:00:00\n")
-        for track_num, (start, end) in enumerate(silence_spots, start=2):
-            if end < 5:
-                track_num -= 1
-                continue
+        for track_num, (timestamp, text) in enumerate(silence_spots, start=1):
             track_num_str = str(track_num).zfill(digits)  # Add leading zeros
             file.write(f"  TRACK {track_num_str} AUDIO\n")
             file.write(f"    TITLE \"{label} {track_num_str}\"\n")
-            file.write(f"    INDEX 01 {convert_seconds_to_mm_ss_ff(end)}\n")
+            file.write(f"    INDEX 01 {convert_seconds_to_mm_ss_ff(timestamp)}\n")
     print(f"Chapters exported to: {output_file}")
 
 def export_to_json(silence_spots, audio_file):
-    # output_file = audio_file.rsplit('.', 1)[0] + '.json'
-    output_file = "chapters.json"
+    output_file = audio_file.rsplit('.', 1)[0] + '.chapterized.json'
     data = []
-    silence_spots.insert(0, (0, 0))
-    # remove first found silence spot if it is less than 5 seconds into the audio
-    if silence_spots[1][1] < 5:
-        silence_spots.pop(1)
     for i in range(len(silence_spots) - 1):
         window = silence_spots[i:i+2]
         prev = window[0]
         curr = window[1]
-        prev_start, prev_end = prev
-        curr_start, curr_end = curr
-        data.append({
-            "id": i,
-            "start": prev_end,
-            "end": curr_end,
-            "title": f"{label} {i + 1}"
-        })
+        prev_timestamp, prev_text = prev
+        curr_timestamp, _ = curr
+
+        if transcribing and transcript_labels:
+            data.append({
+                "id": i,
+                "start": prev_timestamp,
+                "end": curr_timestamp,
+                "title": f"{prev_text}"
+            })
+        else:
+            data.append({
+                "id": i,
+                "start": prev_timestamp,
+                "end": curr_timestamp,
+                "title": f"{label} {i + 1}"
+            })
 
     with open(output_file, 'w') as file:
         json.dump(data, file, separators=(',', ':'))
     print(f"Chapters exported to: {output_file}")
-
-def speech_to_text(silence_spots, audio_file):
-    for i, (_, start) in enumerate(silence_spots, start=1):
-        # transcribe 3 seconds from end of silence
-        end = start + 3
-        transcribe_audio(audio_file, start, end)
 
 
 if __name__ == "__main__":
@@ -180,8 +180,9 @@ if __name__ == "__main__":
 
     detect_silence(input_audio_file, noise_threshold, duration)
     print(f"Total silence spots detected: {len(silence_spots)}")
-    # if prompt_yes_no(question="Speech to text after each part?", default="no"):
-    #     speech_to_text(silence_spots, input_audio_file)
+    if transcribing:
+        if not prompt_yes_no(question="Use transcriptions as chapter lables?", default="yes"):
+            transcript_labels = False
     if prompt_yes_no(question="Store cue file?", default="no"):
         export_to_cue(silence_spots, input_audio_file)
     if prompt_yes_no(question="Store chapter.json?", default="no"):
