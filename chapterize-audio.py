@@ -157,7 +157,10 @@ def export_to_cue(silence_spots, audio_file):
         for track_num, (timestamp, text) in enumerate(silence_spots, start=1):
             track_num_str = str(track_num).zfill(digits)  # Add leading zeros
             file.write(f"  TRACK {track_num_str} AUDIO\n")
-            file.write(f"    TITLE \"{label} {track_num_str}\"\n")
+            if transcribing and transcript_labels:
+                file.write(f"    TITLE \"{text}\"\n")
+            else:
+                file.write(f"    TITLE \"{label} {track_num_str}\"\n")
             file.write(f"    INDEX 01 {convert_seconds_to_mm_ss_ff(timestamp)}\n")
     print(f"Chapters exported to: {output_file}")
 
