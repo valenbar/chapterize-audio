@@ -101,7 +101,6 @@ def detect_silence(input_file, noise_threshold, duration):
     command = [
         'ffmpeg',
         '-i', input_file,
-        '-map', '0:a',  # Select only the audio streams
         '-af', f'silencedetect=noise={noise_threshold}dB:d={duration}',
         '-f', 'null',
         '-'
