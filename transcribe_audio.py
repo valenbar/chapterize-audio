@@ -13,13 +13,9 @@ def sigint_handler(signal, frame):
 def transcribe_audio(audio_file, start, end, language) -> str:
     command = [
         'ffmpeg',
-        '-hwaccel', 'cuda',  # Add hardware acceleration method (e.g., 'cuda' for NVIDIA GPUs)
-        '-i', audio_file,
         '-ss', str(start),
         '-to', str(end),
-        '-c:a', 'pcm_s16le',
-        '-ac', '1',
-        '-ar', '16000',
+        '-i', audio_file,
         '-loglevel', 'error',
         '-y', 'temp.wav'
     ]
