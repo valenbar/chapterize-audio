@@ -15,7 +15,7 @@ TRANSCRIPTION_START_SHIFT = -0.3
 parser = argparse.ArgumentParser(description="Generate chapters from detected silence in audio files")
 
 # Add the arguments
-parser.add_argument('-i', '--input_audio', type=str, required=True, help="The input audio file")
+parser.add_argument('-i', '--input_audio', type=str, required=False, help="The input audio file (default: m4b or mp3 file in current directory)")
 parser.add_argument('-t', '--threshold', type=int, default=-30, help="The silence threshold in dB (default: -30)")
 parser.add_argument('-d', '--duration', type=float, default=2.5, help="The minimum silence duration in seconds (default: 2.5)")
 parser.add_argument('-l', '--label', type=str, default="Part", help="The label to prefix the chapter nr. (default: Part)")
@@ -195,10 +195,23 @@ def export_to_json(silence_spots, audio_file):
         json.dump(data, file, separators=(',', ':'))
     print(f"Chapters exported to: {output_file}")
 
+def audio_file_in_directory() -> str:
+    for file in os.listdir("."):
+        if file.endswith(".m4b") or file.endswith(".mp3"):
+            return file
+    return None
 
 if __name__ == "__main__":
-    if not os.path.isfile(input_audio_file):
-        print("Input audio file does not exist")
+    if input_audio_file is None:
+        # find m4b or mp3 file in current directory
+        input_audio_file = audio_file_in_directory()
+        if input_audio_file is None:
+            print("No input audio file given and no m4b or mp3 file found in directory")
+            sys.exit(1)
+        else:
+            print(f"Using: {input_audio_file} as input audio file\n")
+    elif not os.path.isfile(input_audio_file):
+        print("Given input audio file does not exist")
         sys.exit(1)
 
     detect_silence(input_audio_file, noise_threshold, duration)
