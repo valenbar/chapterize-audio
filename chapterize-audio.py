@@ -19,6 +19,7 @@ parser.add_argument('-i', '--input_audio', type=str, required=False, help="The i
 parser.add_argument('-t', '--threshold', type=int, default=-30, help="The silence threshold in dB (default: -30)")
 parser.add_argument('-d', '--duration', type=float, default=2.5, help="The minimum silence duration in seconds (default: 2.5)")
 parser.add_argument('-l', '--label', type=str, default="Part", help="The label to prefix the chapter nr. (default: Part)")
+parser.add_argument('-ls', '--label-start-index', type=int, default=1, help="The start index of the chapter nr. (default: 1)")
 parser.add_argument('--transcription', action=argparse.BooleanOptionalAction, default=True, help="Enable transcribing of chapter entry (default: True)")
 parser.add_argument('--language', type=str, default="english", help="The language to use for transcribing (default: english)");
 parser.add_argument('--transcript-duration', type=float, default=3, help="The duration of the audio to transcribe (default: 3)")
@@ -30,6 +31,7 @@ input_audio_file: str = args.input_audio
 noise_threshold: int = args.threshold
 duration: float = args.duration
 label: str = args.label
+label_start_index: int = args.label_start_index
 transcribing: bool = args.transcription
 language: str = args.language
 transcript_duration: float = args.transcript_duration
@@ -116,7 +118,7 @@ def detect_silence(input_file, noise_threshold, duration):
         text = transcribe_audio(audio_file=input_audio_file, start=chapter_start, end=transcript_duration, language=language)
         print(f" - {text}")
     else:
-        print(f" - {label} 1")
+        print(f" - {label} {label_start_index}")
         text = "-"
 
     silence_spots.append((chapter_start, text))
@@ -141,7 +143,7 @@ def detect_silence(input_file, noise_threshold, duration):
                 )
                 print(f" - {text}")
             else:
-                print(f" - {label} {len(silence_spots) + 1}")
+                print(f" - {label} {len(silence_spots) + label_start_index}")
                 text = "-"
             silence_spots.append((chapter_start, text))
 
@@ -153,7 +155,7 @@ def export_to_cue(silence_spots, audio_file):
     digits = len(str(len(silence_spots)))
     with open(output_file, 'w') as file:
         file.write(f"FILE \"{os.path.basename(audio_file)}\" MP3\n")  # Replace with your audio file name
-        for track_num, (timestamp, text) in enumerate(silence_spots, start=1):
+        for track_num, (timestamp, text) in enumerate(silence_spots, start=label_start_index):
             track_num_str = str(track_num).zfill(digits)  # Add leading zeros
             file.write(f"  TRACK {track_num_str} AUDIO\n")
             if transcribing and transcript_labels:
@@ -188,7 +190,7 @@ def export_to_json(silence_spots, audio_file):
                 "id": i,
                 "start": prev_timestamp,
                 "end": curr_timestamp,
-                "title": f"{label} {i + 1}"
+                "title": f"{label} {i + label_start_index}"
             })
 
     with open(output_file, 'w') as file:
