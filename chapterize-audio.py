@@ -23,6 +23,7 @@ parser.add_argument('-ls', '--label-start-index', type=int, default=1, help="The
 parser.add_argument('--transcription', action=argparse.BooleanOptionalAction, default=True, help="Enable transcribing of chapter entry (default: True)")
 parser.add_argument('--language', type=str, default="english", help="The language to use for transcribing (default: english)");
 parser.add_argument('--transcript-duration', type=float, default=3, help="The duration of the audio to transcribe (default: 3)")
+parser.add_argument('-y', '--yes', action=argparse.BooleanOptionalAction, default=False, help="Skip all prompts and use default values (default: False)")
 
 args = parser.parse_args()
 
@@ -35,6 +36,7 @@ label_start_index: int = args.label_start_index
 transcribing: bool = args.transcription
 language: str = args.language
 transcript_duration: float = args.transcript_duration
+skip_prompts: bool = args.yes
 
 # Global variable to store silence spots
 silence_spots = []
@@ -43,6 +45,8 @@ transcript_labels = True
 
 
 def prompt_yes_no(question, default="no"):
+    if skip_prompts:
+        return True
     valid = {"yes": True, "y": True, "no": False, "n": False}
     if default is None:
         prompt = " [y/n] "
