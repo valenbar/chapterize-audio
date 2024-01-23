@@ -120,6 +120,7 @@ def detect_silence(input_file, noise_threshold, duration):
     print(f"Chapter start: {str(datetime.timedelta(seconds=chapter_start)).split('.')[0]}", end='', flush=True)
     if transcribing:
         text = transcribe_audio(audio_file=input_audio_file, start=chapter_start, end=transcript_duration, language=language)
+        text = text[0].upper() + text[1:]
         print(f" - {text}")
     else:
         print(f" - {label} {label_start_index}")
@@ -145,6 +146,7 @@ def detect_silence(input_file, noise_threshold, duration):
                     end=chapter_start + transcript_duration,
                     language=language
                 )
+                text = text[0].upper() + text[1:]
                 print(f" - {text}")
             else:
                 print(f" - {label} {len(silence_spots) + label_start_index}")
