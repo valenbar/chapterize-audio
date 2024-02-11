@@ -5,7 +5,9 @@ import argparse
 import os
 import datetime
 import json
-from transcribe_audio import transcribe_audio, sigint_handler as transcribe_sigint_handler
+import atexit
+from transcribe_audio import transcribe_audio
+# from transcribe_audio import sigint_handler as transcribe_sigint_handler
 
 MIN_FIRST_CHAPTER_DURATION = 5
 MIN_LAST_CHAPTER_DURATION = 3
@@ -73,8 +75,6 @@ def sigint_handler(signal, frame):
     # if prompt_yes_no(question="Store intermediate results?", default="no"):
     #     export_to_cue(silence_spots, input_audio_file)
     #     export_to_json(silence_spots, input_audio_file)
-    if transcribing:
-        transcribe_sigint_handler(signal, frame)
     sys.exit(0)
 
 
@@ -223,6 +223,9 @@ if __name__ == "__main__":
         print("Given input audio file does not exist")
         sys.exit(1)
 
+    if transcribing and not os.path.exists('./temp'):
+        os.makedirs('./temp')
+
     detect_silence(input_audio_file, noise_threshold, duration)
     print(f"Total silence spots detected: {len(silence_spots)}")
     if transcribing:
@@ -232,3 +235,13 @@ if __name__ == "__main__":
         export_to_cue(silence_spots, input_audio_file)
     if prompt_yes_no(question="Store chapter.json?", default="yes"):
         export_to_json(silence_spots, input_audio_file)
+
+
+def cleanup():
+    if os.path.exists('./temp'):
+        # remove temp folder and its contents
+        for file in os.listdir('./temp'):
+            os.remove(f'./temp/{file}')
+        os.rmdir('./temp')
+
+atexit.register(cleanup)
