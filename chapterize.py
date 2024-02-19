@@ -173,7 +173,7 @@ def export_to_cue(silence_spots, audio_file):
     print(f"Chapters exported to: {output_file}")
 
 def export_to_json(silence_spots, audio_file):
-    output_file = audio_file.rsplit('.', 1)[0] + '.chapterized.json'
+    output_file = os.path.dirname(audio_file) + "chapterized.json"
     data = []
     total_length = get_audio_duration(audio_file)
     silence_spots.append((total_length, "-"))
@@ -201,7 +201,7 @@ def export_to_json(silence_spots, audio_file):
             })
 
     with open(output_file, 'w') as file:
-        json.dump(data, file, separators=(',', ':'))
+        json.dump(data, file, separators=(',', ':'), indent=4)
     print(f"Chapters exported to: {output_file}")
 
 def audio_file_in_directory() -> str:
@@ -233,7 +233,7 @@ if __name__ == "__main__":
             transcript_labels = False
     if prompt_yes_no(question="Store cue file?", default="yes"):
         export_to_cue(silence_spots, input_audio_file)
-    if prompt_yes_no(question="Store chapter.json?", default="yes"):
+    if prompt_yes_no(question="Store chapterized.json?", default="yes"):
         export_to_json(silence_spots, input_audio_file)
 
 
