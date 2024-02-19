@@ -17,7 +17,7 @@ def cleanup():
         os.rmdir('./temp')
 
 
-def transcribe_audio(audio_file, start, end, language) -> str:
+def transcribe(audio_file, start, end, language) -> str:
     if not os.path.exists('./temp'):
         raise Exception("Temp folder does not exist")
 
@@ -58,7 +58,7 @@ def main():
     audio_file = "./audio/all_systems_red.m4b"
     start = 0
     end = 3
-    text = transcribe_audio(audio_file, start, end, "english")
+    text = transcribe(audio_file, start, end, "english")
     print(text)
 
 

@@ -6,7 +6,7 @@ import os
 import datetime
 import json
 import atexit
-from transcribe_audio import transcribe_audio
+from transcribe import transcribe
 # from transcribe_audio import sigint_handler as transcribe_sigint_handler
 
 MIN_FIRST_CHAPTER_DURATION = 5
@@ -119,7 +119,7 @@ def detect_silence(input_file, noise_threshold, duration):
     chapter_start = 0
     print(f"Chapter start: {str(datetime.timedelta(seconds=chapter_start)).split('.')[0]}", end='', flush=True)
     if transcribing:
-        text = transcribe_audio(audio_file=input_audio_file, start=chapter_start, end=transcript_duration, language=language)
+        text = transcribe(audio_file=input_audio_file, start=chapter_start, end=transcript_duration, language=language)
         text = text[0].upper() + text[1:]
         print(f" - {text}")
     else:
@@ -140,7 +140,7 @@ def detect_silence(input_file, noise_threshold, duration):
 
             print(f"Chapter start: {str(datetime.timedelta(seconds=chapter_start)).split('.')[0]}", end='', flush=True)
             if transcribing:
-                text = transcribe_audio(
+                text = transcribe(
                     audio_file=input_file,
                     start=chapter_start + TRANSCRIPTION_START_SHIFT,
                     end=chapter_start + transcript_duration,
