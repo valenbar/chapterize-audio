@@ -231,7 +231,7 @@ if __name__ == "__main__":
     if transcribing:
         if not prompt_yes_no(question="Use transcriptions as chapter lables?", default="yes"):
             transcript_labels = False
-    if prompt_yes_no(question="Store cue file?", default="yes"):
+    if prompt_yes_no(question="Store cue file?", default="no"):
         export_to_cue(silence_spots, input_audio_file)
     if prompt_yes_no(question="Store chapterized.json?", default="yes"):
         export_to_json(silence_spots, input_audio_file)
