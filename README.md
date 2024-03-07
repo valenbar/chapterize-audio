@@ -95,6 +95,9 @@ JSON file output:
 ]
 ```
 
+## Todo list
+- [ ] Option to fix timing of existing chapters
+
 
 ## Acknowledgements
 
