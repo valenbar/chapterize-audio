@@ -97,6 +97,7 @@ JSON file output:
 
 ## Todo list
 - [ ] Option to fix timing of existing chapters
+- [ ] Option to overwrite chapters in audiobookshelfs metadata.json directly
 
 
 ## Acknowledgements
